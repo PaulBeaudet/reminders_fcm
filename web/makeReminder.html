@@ -1,0 +1,21 @@
+
+<html>
+<head>
+    <title>Reminder</title>
+</head>
+<body>
+<div id="app">
+    <p> Make a reminder for yourself </p>
+    <input type="text" v-model="reminder">
+    <p>In how many milliseconds would you like to be reminder (yes this is a dumb test)</p>
+    <input type="number" v-model="timeToFire">
+    <button v-on:click="makeReminder">Make Reminder </button>
+    <p></p>
+    <input type="text" v-model="message"><input>
+</div>
+<script src="https://www.gstatic.com/firebasejs/4.4.0/firebase.js"></script>
+<script src="https://unpkg.com/vue"></script>
+<script src="/socket.io/socket.io.js"></script>
+<script src="/makeReminder.js"></script>
+</body>
+</html>

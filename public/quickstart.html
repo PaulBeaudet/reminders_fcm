@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Reminder</title>
+</head>
+<body>
+<h1 id="example"><h1>
+<script src="https://www.gstatic.com/firebasejs/4.4.0/firebase.js"></script>
+<script>
+    var config= {
+        apiKey: "AIzaSyAvJE10V7FUDxAG0YIkwrn1PBxslqDn_-s",
+        authDomain: "reminder-test-b0c4e.firebaseapp.com",
+        databaseURL: "https://reminder-test-b0c4e.firebaseio.com",
+        projectId: "reminder-test-b0c4e",
+        storageBucket: "reminder-test-b0c4e.appspot.com",
+        messagingSenderId: "638191345900"
+    };
+    firebase.initializeApp(config);
+    var example = document.getElementById('example');
+    var database = firebase.database().ref().child('text');
+    database.on('value', snap => example.innerText = snap.val());
+
+</script>
+</body>
+</html>
