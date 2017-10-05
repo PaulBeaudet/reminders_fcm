@@ -119,8 +119,10 @@ function startup(){
 }
 
 if(process.env.NEW_CONFIG === 'true'){ // given that this is on dev side and a new service account is added
+    console.log('attemting to encrypt config file');
     config.encrypt(process.env.KEY);   // lock up service account file for firebase on dev machine
     startup();
 } else {                               // mainly exist so that heroku can atomatically pull changes to repo
+    console.log('attemting to decrypt');
     config.decrypt(process.env.KEY, startup); // decrypt service Account file when in the cloud (given shared key has been set)
 }
