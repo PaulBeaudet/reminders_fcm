@@ -96,16 +96,16 @@ var config = {
     crypto: require('crypto'),
     fs: require('fs'),
     decrypt: function(key, onFinish){
-        var readFile = config.fs.createReadStream(__dirname + '/config/encrypted_serviceAccount.json');
+        var readFile = config.fs.createReadStream(path.join(__dirname, '/config/encrypted_serviceAccount.json'));
         var decrypt = config.crypto.createDecipher('aes-256-ctr', key);
-        var writeFile = config.fs.createWriteStream(__dirname + '/keys/serviceAccount.json');
+        var writeFile = config.fs.createWriteStream(path.join(__dirname, '/keys/serviceAccount.json'));
         readFile.pipe(decrypt).pipe(writeFile);
         writeFile.on('finish', onFinish); // call next thing to do
     },
     encrypt: function(key, onFinish){     // prep case for commiting encryted secrets to source
-        var readFile = config.fs.createReadStream(__dirname + '/keys/serviceAccount.json');
+        var readFile = config.fs.createReadStream(path.join(__dirname, '/keys/serviceAccount.json'));
         var encrypt = config.crypto.createCipher('aes-256-ctr', key);
-        var writeFile = config.fs.createWriteStream(__dirname + '/config/encrypted_serviceAccount.json');
+        var writeFile = config.fs.createWriteStream(path.join(__dirname, '/config/encrypted_serviceAccount.json'));
         readFile.pipe(encrypt).pipe(writeFile);
         if(onFinish){writeFile.on('finish', onFinish);}
     }
@@ -119,10 +119,8 @@ function startup(){
 }
 
 if(process.env.NEW_CONFIG === 'true'){ // given that this is on dev side and a new service account is added
-    console.log('attemting to encrypt config file');
     config.encrypt(process.env.KEY);   // lock up service account file for firebase on dev machine
     startup();
 } else {                               // mainly exist so that heroku can atomatically pull changes to repo
-    console.log('attemting to decrypt');
     config.decrypt(process.env.KEY, startup); // decrypt service Account file when in the cloud (given shared key has been set)
 }
