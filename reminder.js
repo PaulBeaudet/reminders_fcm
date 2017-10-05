@@ -4,7 +4,7 @@ var path = require('path');
 var firebase = {
     admin: require('firebase-admin'),
     init: function(){
-        var serviceAccount = require(path.join(__dirname+'/keys/reminder-test-1213a693dc33.json'));
+        var serviceAccount = require(path.join(__dirname+'/keys/serviceAccount.json'));
         firebase.admin.initializeApp({
             credential: firebase.admin.credential.cert(serviceAccount),
             databaseURL: "https://reminder-test-b0c4e.firebaseio.com/"
