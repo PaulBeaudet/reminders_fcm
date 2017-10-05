@@ -1,10 +1,11 @@
 // reminder.js ~ copyright 2017 Paul Beaudet ~ MIT License
 var path = require('path');
+var tmp = require('tmp'); // because tmp folder is something special (goes to ram) Only place we can write in heroku
 
 var firebase = {
     admin: require('firebase-admin'),
-    init: function(){
-        var serviceAccount = require(path.join(__dirname+'/keys/serviceAccount.json'));
+    init: function(serviceFilePath){
+        var serviceAccount = require(serviceFilePath);
         firebase.admin.initializeApp({
             credential: firebase.admin.credential.cert(serviceAccount),
             databaseURL: "https://reminder-test-b0c4e.firebaseio.com/"
@@ -98,29 +99,37 @@ var config = {
     decrypt: function(key, onFinish){
         var readFile = config.fs.createReadStream(path.join(__dirname, '/config/encrypted_serviceAccount.json'));
         var decrypt = config.crypto.createDecipher('aes-256-ctr', key);
-        var writeFile = config.fs.createWriteStream(path.join(__dirname, '/keys/serviceAccount.json'));
-        readFile.pipe(decrypt).pipe(writeFile);
-        writeFile.on('finish', onFinish); // call next thing to do
+        tmp.file({prefix: 'serviceFile', postfix: '.json'},function foundTmp(error, path, fd, cleanup){
+            if(error){throw error;}                            // maybe do something usefull instead
+            var writeFile = config.fs.createWriteStream(path); // only place things can be writen in heroku
+            readFile.pipe(decrypt).pipe(writeFile);
+            writeFile.on('finish', function(){
+                onFinish(path);
+            }); // call next thing to do
+        });
     },
     encrypt: function(key, onFinish){     // prep case for commiting encryted secrets to source
         var readFile = config.fs.createReadStream(path.join(__dirname, '/keys/serviceAccount.json'));
         var encrypt = config.crypto.createCipher('aes-256-ctr', key);
         var writeFile = config.fs.createWriteStream(path.join(__dirname, '/config/encrypted_serviceAccount.json'));
         readFile.pipe(encrypt).pipe(writeFile);
-        if(onFinish){writeFile.on('finish', onFinish);}
+        if(onFinish){
+            writeFile.on('finish', function(){
+                onFinish(path.join(__dirname, '/keys/serviceAccount.json')); // actual location on dev machine
+            });
+        }
     }
 };
 
-function startup(){
-    var http = serve.theSite();                                  // set express middleware and routes up
-    socket.listen(http);                                         // listen for socket io connections
-    http.listen(process.env.PORT);                               // listen on specified PORT enviornment variable, when our main db is up
-    firebase.init();                                             // setup communication with firebase servers to do push notifications
+function startup(serviceFilePath){
+    var http = serve.theSite();               // set express middleware and routes up
+    socket.listen(http);                      // listen for socket io connections
+    http.listen(process.env.PORT);            // listen on specified PORT enviornment variable, when our main db is up
+    firebase.init(serviceFilePath);           // setup communication with firebase servers to do push notifications
 }
 
-if(process.env.NEW_CONFIG === 'true'){ // given that this is on dev side and a new service account is added
-    config.encrypt(process.env.KEY);   // lock up service account file for firebase on dev machine
-    startup();
-} else {                               // mainly exist so that heroku can atomatically pull changes to repo
+if(process.env.NEW_CONFIG === 'true'){        // given that this is on dev side and a new service account is added
+    config.encrypt(process.env.KEY, startup); // lock up service account file for firebase on dev machine
+} else {                                      // mainly exist so that heroku can atomatically pull changes to repo
     config.decrypt(process.env.KEY, startup); // decrypt service Account file when in the cloud (given shared key has been set)
 }
