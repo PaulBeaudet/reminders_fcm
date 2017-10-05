@@ -4,8 +4,19 @@ var path = require('path');
 var firebase = {
     admin: require('firebase-admin'),
     init: function(){
-        // TODO set up a connection with firebase
-        console.log('getting sucked into the google ecosystem');
+        var serviceAccount = require(path.join(__dirname+'/keys/reminder-test-1213a693dc33.json'));
+        firebase.admin.initializeApp({
+            credential: firebase.admin.credential.cert(serviceAccount),
+            databaseURL: "https://reminder-test-b0c4e.firebaseio.com/"
+        });
+    },
+    pushIt: function(fcmToken, reminder){
+        var payload = {data: {title: 'Reminder',body: reminder}};
+        firebase.admin.messaging().sendToDevice(fcmToken, payload).then(function(response) {
+            console.log("Successfully sent message:", response);
+        }).catch(function(error) {
+            console.log("Error sending message:", error);
+        });
     }
 };
 
@@ -13,10 +24,16 @@ var notify = {
     users: [],
     createReminder: function(clientId){
         return function createEvent(data){
-            var fcmToken = notify.users[notify.grabIndex(clientId)].fcmToken; // hold this in closure
-            setTimeout(function pushIt(){
-                // do fcm thing with data.reminder
-            }, data.timeToFire); // send in specified millis
+            var idx = notify.grabIndex(clientId);
+            if(idx > -1){
+                socket.io.to(clientId).emit('confirm', {message: 'Pending reminder'});
+                var fcmToken = notify.users[idx].fcmToken; // hold this in closure
+                setTimeout(function pushIt(){
+                    firebase.pushIt(fcmToken, data.reminder);
+                }, data.timeToFire); // send in specified millis
+            } else {
+                socket.io.to(clientId).emit('confirm', {message: 'Something went wrong, reload'});
+            }
         };
     },
     registerUser: function(clientId){
@@ -78,3 +95,4 @@ var serve = {                                                // handles express 
 var http = serve.theSite();                                  // set express middleware and routes up
 socket.listen(http);                                         // listen for socket io connections
 http.listen(process.env.PORT);                               // listen on specified PORT enviornment variable, when our main db is up
+firebase.init();                                             // setup communication with firebase servers to do push notifications

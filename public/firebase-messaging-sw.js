@@ -13,6 +13,10 @@ var fb = { // sigelton for firebase shit
     init: function(){
         firebase.initializeApp(fb.config);
         fb.messaging = firebase.messaging();
+        fb.messaging.setBackgroundMessageHandler(function onBackgroundMessage(payload){
+            var options = {body: payload.data.body};
+            return self.registration.showNotification(payload.data.title, options);
+        });
     }
 };
 

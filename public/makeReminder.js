@@ -19,23 +19,20 @@ var fb = { // sigelton for firebase shit
         firebase.initializeApp(fb.config);
         fb.messaging = firebase.messaging();
         fb.messaging.requestPermission().then(function onPermission(){
-            console.log('we got permission');
-            return fb.messaging.getToken();
-        }).then(function gotTheToken(token){
-            console.log(token);
+            return fb.messaging.getToken();            // only try to get token when we get permission
+        }).then(function gotTheToken(token){           // first step is to get a token, server is going to store it anyhow
             socket.io.emit('myToken', {token: token}); // share token info with server
-        }).catch(function onError(error){
-            console.log('shit:' + error);
-        });
+        }).catch(function onError(error){console.log('firebase init issue:' + error);});
         fb.messaging.onMessage(function gotAMessage(payload){
-            console.log('onMessage: ' + payload);
+            // console.log('onMessage: ' + JSON.stringify(payload, null, 4));
+            reminder.app.message = payload.data.body;
         });
     }
 };
 
 
-var reminder = {      // admin controls
-    app: new Vue({ // I can only imagine this framework is full of dank memes
+var reminder = {       //
+        app: new Vue({ // I can only imagine this framework is full of dank memes
         el: '#app',
         data: {
             reminder: 'forget the milk', // reminds you that milk would be nice
@@ -43,18 +40,18 @@ var reminder = {      // admin controls
             message: 'reminder not set', // basically a status message
         },
         methods: {
-            makeReminder: function(){
+            makeReminder: function(){    // method for setting up reminders
                 socket.io.emit('myReminder', {
                     reminder: this.reminder,
-                    timeToFire: this.timeToFire
+                    timeToFire: this.timeToFire // in millis, stupidly uses setTimeout without converting anything
                 });
             },
-            confirm: function(){
-
+            confirm: function(data){
+                this.message = data.message; // let server communicate whats its issues are
             }
         }
     })
 };
 
-fb.init();
-socket.init();
+fb.init();     // start firebase client up
+socket.init(); // set on message evets
